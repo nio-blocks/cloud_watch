@@ -40,9 +40,9 @@ Note: only one request set will be made per list of signals processed. A request
 
 One signal per instance. The signal will have the following format:
 
-```json
+```python
  {
-   'instance_id': <The string instance ID of the instance in question>,
-   'value': <The result of the calculation>
+   'instance_id': '<The string instance ID of the instance in question>',
+   'value': '<The result of the calculation>'
  }
 ```
