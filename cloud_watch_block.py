@@ -109,8 +109,8 @@ class CloudWatch(Block):
                 self._logger.debug("Getting metric for {}".format(instance_id))
                 metric = self._get_metric(instance_id)
                 if len(metric):
-                    # We only care about the last metric
-                    val = metric[-1][self.statistic.name]
+                    # We only care about the first metric - this is the newest
+                    val = metric[0][self.statistic.name]
                     self._logger.debug("Metric's value was {}".format(val))
                     signals_out.append(Signal({
                         'instance_id': instance_id,

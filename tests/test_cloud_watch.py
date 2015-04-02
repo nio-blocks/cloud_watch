@@ -126,8 +126,8 @@ class TestCloudWatch(NIOBlockTestCase):
         self.assert_num_signals_notified(2)
 
         # Make sure we grabbed the maximum as the value and not the others
-        # We also want to make sure we only used the last value of the results
-        self.assertEqual(self._signals[0].value, 3)
+        # We also want to make sure we only used the first value of the results
+        self.assertEqual(self._signals[0].value, 2)
         self.assertEqual(self._signals[0].instance_id, 'instance-0')
         self.assertEqual(self._signals[1].value, 5)
         self.assertEqual(self._signals[1].instance_id, 'instance-1')
