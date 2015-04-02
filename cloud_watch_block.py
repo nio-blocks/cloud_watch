@@ -6,7 +6,7 @@ from nio.common.discovery import Discoverable, DiscoverableType
 from nio.common.block.base import Block
 from nio.common.signal.base import Signal
 from nio.metadata.properties import ObjectProperty, PropertyHolder, \
-    IntProperty, StringProperty, SelectProperty
+    IntProperty, StringProperty, SelectProperty, VersionProperty
 from nio.modules.threading import Lock
 
 from boto.ec2.cloudwatch import connect_to_region
@@ -45,6 +45,7 @@ class CloudWatch(Block):
     result_period = IntProperty(title="Result Period Minutes", default=5)
     statistic = SelectProperty(MetricStatistics, title="Statistic Type",
                                default=MetricStatistics.Average)
+    version = VersionProperty('0.0.1')
 
     def __init__(self):
         super().__init__()
