@@ -10,8 +10,10 @@ class SampleMetric():
     """ A class to create a "Metric-like" object """
 
     def __init__(self, instance_id):
-        """ Create a sample metric for an instance ID """
+        """ Create a sample metric for an EC2 instance """
         self.dimensions = {'InstanceId': [instance_id]}
+        self.namespace = 'AWS/EC2'
+        self.name = 'MyMetricName'
 
 
 @patch('boto.ec2.cloudwatch.CloudWatchConnection.get_metric_statistics')
@@ -41,8 +43,8 @@ class TestCloudWatch(NIOBlockTestCase):
             aws_access_key_id='FAKEKEY',
             aws_secret_access_key='FAKESECRET')
 
-    def test_get_instance_ids(self, connect_func, list_func, stats_func):
-        """ Make sure we properly load instance IDs """
+    def test_sync_metrics(self, connect_func, list_func, stats_func):
+        """ Make sure we properly load metrics """
         blk = CloudWatch()
         connect_func.return_value = CloudWatchConnection()
         # We're going to simulate the result returned two instances
@@ -55,15 +57,15 @@ class TestCloudWatch(NIOBlockTestCase):
         })
 
         # Make sure the list metrics call had the right metric name
-        # and that the instance IDs got saved properly
+        # and that the metrics got saved properly
         list_func.assert_called_once_with(metric_name='MyMetricName')
-        self.assertEqual(blk._instance_ids, ['instance-1', 'instance-2'])
+        self.assertEqual(len(blk._metrics), 2)
 
     def test_get_metrics(self, connect_func, list_func, stats_func):
         """ Make sure we make a proper get_metric_statistics call """
         blk = CloudWatch()
         connect_func.return_value = CloudWatchConnection()
-        blk._instance_ids = ['instance-1']
+        blk._metrics = [SampleMetric('instance-1')]
         self.configure_block(blk, {
             'metric': 'MyMetricName',
             'lookback_mins': 60,  # 1 hour
@@ -74,14 +76,12 @@ class TestCloudWatch(NIOBlockTestCase):
         stats_func.return_value = [{'Maximum': 2}]
 
         # Send two signals into the block
-        # This should only trigger one request per instance ID
+        # This should only trigger one request per metric
         blk.process_signals([Signal(), Signal()])
         stats_func.assertCalledOnceWith(
             period=300,  # 5 mins...in seconds
-            # start_time=start_time,
-            # end_time=end_time,
             metric_name='MyMetricName',
-            namespace='AWS/EC2',
+            namespace='AWS/EC2',  # Make sure it uses the metric's namespace
             statistics='Maximum',
             dimensions={'InstanceId': ['instance-1']})
 
@@ -96,9 +96,10 @@ class TestCloudWatch(NIOBlockTestCase):
             'statistic': 'Maximum'
         })
 
-        # 4 instances will run, one gets multiple results, one gets one result,
+        # 4 metrics will run, one gets multiple results, one gets one result,
         # one gets no results, and one throws an error
-        blk._instance_ids = ['instance-{}'.format(i) for i in range(4)]
+        blk._metrics = [
+            SampleMetric('instance-{}'.format(i)) for i in range(4)]
         stats_func.side_effect = [
             [{
                 'Average': 1.5,
@@ -119,7 +120,7 @@ class TestCloudWatch(NIOBlockTestCase):
         ]
 
         # Send two signals into the block
-        # This should only trigger one request per instance ID
+        # This should only trigger one request per metric
         blk.process_signals([Signal(), Signal()])
 
         # Only 2 should be notified - empty and error are ignored
@@ -128,6 +129,10 @@ class TestCloudWatch(NIOBlockTestCase):
         # Make sure we grabbed the maximum as the value and not the others
         # We also want to make sure we only used the first value of the results
         self.assertEqual(self._signals[0].value, 2)
-        self.assertEqual(self._signals[0].instance_id, 'instance-0')
+        self.assertEqual(
+            self._signals[0].dimensions['InstanceId'],
+            ['instance-0'])
         self.assertEqual(self._signals[1].value, 5)
-        self.assertEqual(self._signals[1].instance_id, 'instance-1')
+        self.assertEqual(
+            self._signals[1].dimensions['InstanceId'],
+            ['instance-1'])

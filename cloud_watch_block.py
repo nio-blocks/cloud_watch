@@ -51,15 +51,15 @@ class CloudWatch(Block):
     def __init__(self):
         super().__init__()
         self._conn = None
-        self._instance_ids = []
-        self._instance_ids_lock = Lock()
+        self._metrics = []
+        self._metrics_lock = Lock()
 
     def configure(self, context):
         super().configure(context)
         # Set boto's log level to be the same as ours
         logging.getLogger('boto').setLevel(self._logger.logger.level)
         self._connect()
-        self._sync_instances()
+        self._sync_metrics()
 
     def _connect(self):
         """ Create a connection to AWS using our credentials """
@@ -71,79 +71,76 @@ class CloudWatch(Block):
             aws_secret_access_key=self.creds.access_secret)
         self._logger.debug("Connection complete")
 
-    def _sync_instances(self):
-        """ Makes a request to EC2 and stores valid instance IDs.
+    def _sync_metrics(self):
+        """ Makes a request to CloudWatch and stores valid metrics
 
-        The Instance IDs will be instances that have the supplied metric
-        available for monitoring. So non-burstable instances won't appear
-        if the metric is CPUCreditBalance, e.g.
+        This method takes the configured metric name and obtains all of the
+        valid metrics that match that metric name. Metric objects contain
+        namespace, dimensions, and possibly some other important information
+        for querying later.
 
         Returns:
-            None: saves the instance IDs in self._instance_ids instead
+            None: saves the metics in the self._metrics list instead
         """
-        with self._instance_ids_lock:
+        with self._metrics_lock:
             self._logger.debug(
-                "Syncing valid instances for this metric from EC2")
+                "Syncing valid metrics for {} from EC2".format(self.metric))
             metrics_res = self._conn.list_metrics(metric_name=self.metric)
-            self._instance_ids[:] = [
-                metric.dimensions['InstanceId'][0] for metric in metrics_res]
-            self._logger.debug("{} instance IDs loaded".format(
-                len(self._instance_ids)))
+            self._metrics[:] = metrics_res
+            self._logger.debug("{} metrics loaded".format(len(self._metrics)))
 
     def process_signals(self, signals, input_id='default'):
         # Only make one request per batch of signals
         # It currently doesn't make sense to make multiple requests at once
-        with self._instance_ids_lock:
+        with self._metrics_lock:
             results = self._execute_requests()
         if results:
             self.notify_signals(results)
 
     def _execute_requests(self):
-        """ Go through the saved instance IDs and capture their metrics.
+        """ Go through the saved metrics and capture their values.
 
-        This method should be called inside of the instance IDs Lock
+        This method should be called inside of the metrics Lock
         """
         signals_out = []
-        for instance_id in self._instance_ids:
+        for metric in self._metrics:
             # Get the list of metrics
             try:
-                self._logger.debug("Getting metric for {}".format(instance_id))
-                metric = self._get_metric(instance_id)
-                if len(metric):
+                self._logger.debug("Getting value for {}".format(metric))
+                metric_vals = self._get_metric_value(metric)
+                if len(metric_vals):
                     # We only care about the first metric - this is the newest
-                    val = metric[0][self.statistic.name]
+                    val = metric_vals[0][self.statistic.name]
                     self._logger.debug("Metric's value was {}".format(val))
                     signals_out.append(Signal({
-                        'instance_id': instance_id,
+                        'dimensions': metric.dimensions,
                         'value': val
                     }))
                 else:
                     self._logger.info(
-                        'Instance ID {} did not '
-                        'return any metric value'.format(instance_id))
+                        'Metric {} did not return any metric value'.format(
+                            metric))
             except:
-                # Unable to get the metric for this instance, ignore this
-                # instance_id then
+                # Unable to get the value for this metric, ignore this one
                 self._logger.exception(
-                    'Unable to get metric for {}'.format(instance_id))
+                    'Unable to get metric for {}'.format(metric))
 
         return signals_out
 
-    def _get_metric(self, instance_id):
-        """ Gets the value(s) of the configured metric for an instance """
+    def _get_metric_value(self, metric):
+        """ Gets the value(s) of the saved metric object """
         # Prepare some variables
-        end_time = datetime.datetime.now()
+        end_time = datetime.datetime.utcnow()
         start_time = end_time - datetime.timedelta(minutes=self.lookback_mins)
-        dimensions = {'InstanceId': [instance_id]}
 
         # Make the request
         results = self._conn.get_metric_statistics(
             period=(self.result_period * 60),
             start_time=start_time,
             end_time=end_time,
-            metric_name=self.metric,
-            namespace='AWS/EC2',
+            metric_name=metric.name,
+            namespace=metric.namespace,
             statistics=self.statistic.name,
-            dimensions=dimensions)
+            dimensions=metric.dimensions)
 
         return results
