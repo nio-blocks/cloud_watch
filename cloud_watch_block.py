@@ -6,7 +6,8 @@ from nio.common.discovery import Discoverable, DiscoverableType
 from nio.common.block.base import Block
 from nio.common.signal.base import Signal
 from nio.metadata.properties import ObjectProperty, PropertyHolder, \
-    IntProperty, StringProperty, SelectProperty, VersionProperty
+    IntProperty, StringProperty, SelectProperty
+from nio.metadata.properties.version import VersionProperty
 from nio.modules.threading import Lock
 
 from boto.ec2.cloudwatch import connect_to_region
