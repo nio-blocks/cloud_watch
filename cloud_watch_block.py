@@ -58,8 +58,14 @@ class CloudWatch(Block):
         super().configure(context)
         # Set boto's log level to be the same as ours
         logging.getLogger('boto').setLevel(self._logger.logger.level)
-        self._connect()
-        self._sync_metrics()
+        try:
+            self._connect()
+            self._sync_metrics()
+        except:
+            self._logger.exception(
+                "Unable to connect to region - make sure your "
+                "credentials are correct")
+            raise
 
     def _connect(self):
         """ Create a connection to AWS using our credentials """

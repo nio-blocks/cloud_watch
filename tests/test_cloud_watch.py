@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from boto.exception import BotoServerError
 from boto.ec2.cloudwatch import CloudWatchConnection
 from nio.common.signal.base import Signal
 from nio.util.support.block_test_case import NIOBlockTestCase
@@ -136,3 +137,13 @@ class TestCloudWatch(NIOBlockTestCase):
         self.assertEqual(
             self._signals[1].dimensions['InstanceId'],
             ['instance-1'])
+
+    def test_error_connecting(self, connect_func, list_func, stats_func):
+        """ Make sure connection errors are handled properly """
+        connect_func.return_value = CloudWatchConnection()
+        list_func.side_effect = BotoServerError(500, 'Fake Error connecting')
+        blk = CloudWatch()
+
+        # Make sure we still raise the exception when we configure
+        with self.assertRaises(BotoServerError):
+            self.configure_block(blk, {})
