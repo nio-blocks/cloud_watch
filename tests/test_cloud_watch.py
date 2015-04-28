@@ -47,7 +47,7 @@ class TestCloudWatch(NIOBlockTestCase):
     def test_sync_metrics(self, connect_func, list_func, stats_func):
         """ Make sure we properly load metrics """
         blk = CloudWatch()
-        connect_func.return_value = CloudWatchConnection()
+        connect_func.return_value = CloudWatchConnection('key', 'secret')
         # We're going to simulate the result returned two instances
         list_func.return_value = [
             SampleMetric('instance-1'),
@@ -65,7 +65,7 @@ class TestCloudWatch(NIOBlockTestCase):
     def test_get_metrics(self, connect_func, list_func, stats_func):
         """ Make sure we make a proper get_metric_statistics call """
         blk = CloudWatch()
-        connect_func.return_value = CloudWatchConnection()
+        connect_func.return_value = CloudWatchConnection('key', 'secret')
         blk._metrics = [SampleMetric('instance-1')]
         self.configure_block(blk, {
             'metric': 'MyMetricName',
@@ -89,7 +89,7 @@ class TestCloudWatch(NIOBlockTestCase):
     def test_metric_results(self, connect_func, list_func, stats_func):
         """ Make sure we properly handle the results from get statistics """
         blk = CloudWatch()
-        connect_func.return_value = CloudWatchConnection()
+        connect_func.return_value = CloudWatchConnection('key', 'secret')
         self.configure_block(blk, {
             'metric': 'MyMetricName',
             'lookback_mins': 60,  # 1 hour
@@ -140,7 +140,7 @@ class TestCloudWatch(NIOBlockTestCase):
 
     def test_error_connecting(self, connect_func, list_func, stats_func):
         """ Make sure connection errors are handled properly """
-        connect_func.return_value = CloudWatchConnection()
+        connect_func.return_value = CloudWatchConnection('key', 'secret')
         list_func.side_effect = BotoServerError(500, 'Fake Error connecting')
         blk = CloudWatch()
 
