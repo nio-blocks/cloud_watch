@@ -2,13 +2,13 @@ import re
 import logging
 from enum import Enum
 import datetime
-from nio.common.discovery import Discoverable, DiscoverableType
-from nio.common.block.base import Block
-from nio.common.signal.base import Signal
-from nio.metadata.properties import ObjectProperty, PropertyHolder, \
+from nio.util.discovery import discoverable
+from nio.block.base import Block
+from nio.signal.base import Signal
+from nio.properties import ObjectProperty, PropertyHolder, \
     IntProperty, StringProperty, SelectProperty
-from nio.metadata.properties.version import VersionProperty
-from nio.modules.threading import Lock
+from nio.properties.version import VersionProperty
+from threading import Lock
 
 from boto.ec2.cloudwatch import connect_to_region
 
@@ -36,7 +36,7 @@ class AWSCreds(PropertyHolder):
         AWSRegion, default=AWSRegion.us_east_1, title="AWS Region")
 
 
-@Discoverable(DiscoverableType.block)
+@discoverable
 class CloudWatch(Block):
 
     creds = ObjectProperty(AWSCreds, title="AWS Credentials")
@@ -57,25 +57,25 @@ class CloudWatch(Block):
     def configure(self, context):
         super().configure(context)
         # Set boto's log level to be the same as ours
-        logging.getLogger('boto').setLevel(self._logger.logger.level)
+        logging.getLogger('boto').setLevel(self.logger.logger.level)
         try:
             self._connect()
             self._sync_metrics()
         except:
-            self._logger.exception(
+            self.logger.exception(
                 "Unable to connect to region - make sure your "
                 "credentials are correct")
             raise
 
     def _connect(self):
         """ Create a connection to AWS using our credentials """
-        region_name = re.sub('_', '-', self.creds.region.name)
-        self._logger.debug("Connecting to region {}...".format(region_name))
+        region_name = re.sub('_', '-', self.creds().region().name)
+        self.logger.debug("Connecting to region {}...".format(region_name))
         self._conn = connect_to_region(
             region_name,
-            aws_access_key_id=self.creds.access_key,
-            aws_secret_access_key=self.creds.access_secret)
-        self._logger.debug("Connection complete")
+            aws_access_key_id=self.creds().access_key(),
+            aws_secret_access_key=self.creds().access_secret())
+        self.logger.debug("Connection complete")
 
     def _sync_metrics(self):
         """ Makes a request to CloudWatch and stores valid metrics
@@ -89,11 +89,11 @@ class CloudWatch(Block):
             None: saves the metics in the self._metrics list instead
         """
         with self._metrics_lock:
-            self._logger.debug(
-                "Syncing valid metrics for {} from EC2".format(self.metric))
-            metrics_res = self._conn.list_metrics(metric_name=self.metric)
+            self.logger.debug(
+                "Syncing valid metrics for {} from EC2".format(self.metric()))
+            metrics_res = self._conn.list_metrics(metric_name=self.metric())
             self._metrics[:] = metrics_res
-            self._logger.debug("{} metrics loaded".format(len(self._metrics)))
+            self.logger.debug("{} metrics loaded".format(len(self._metrics)))
 
     def process_signals(self, signals, input_id='default'):
         # Only make one request per batch of signals
@@ -112,23 +112,23 @@ class CloudWatch(Block):
         for metric in self._metrics:
             # Get the list of metrics
             try:
-                self._logger.debug("Getting value for {}".format(metric))
+                self.logger.debug("Getting value for {}".format(metric))
                 metric_vals = self._get_metric_value(metric)
                 if len(metric_vals):
                     # We only care about the first metric - this is the newest
-                    val = metric_vals[0][self.statistic.name]
-                    self._logger.debug("Metric's value was {}".format(val))
+                    val = metric_vals[0][self.statistic().name]
+                    self.logger.debug("Metric's value was {}".format(val))
                     signals_out.append(Signal({
                         'dimensions': metric.dimensions,
                         'value': val
                     }))
                 else:
-                    self._logger.info(
+                    self.logger.info(
                         'Metric {} did not return any metric value'.format(
                             metric))
             except:
                 # Unable to get the value for this metric, ignore this one
-                self._logger.exception(
+                self.logger.exception(
                     'Unable to get metric for {}'.format(metric))
 
         return signals_out
@@ -137,16 +137,16 @@ class CloudWatch(Block):
         """ Gets the value(s) of the saved metric object """
         # Prepare some variables
         end_time = datetime.datetime.utcnow()
-        start_time = end_time - datetime.timedelta(minutes=self.lookback_mins)
+        start_time = end_time - datetime.timedelta(minutes=self.lookback_mins())
 
         # Make the request
         results = self._conn.get_metric_statistics(
-            period=(self.result_period * 60),
+            period=(self.result_period() * 60),
             start_time=start_time,
             end_time=end_time,
             metric_name=metric.name,
             namespace=metric.namespace,
-            statistics=self.statistic.name,
+            statistics=self.statistic().name,
             dimensions=metric.dimensions)
 
         return results
