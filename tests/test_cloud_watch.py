@@ -1,8 +1,9 @@
 from unittest.mock import patch
 from boto.exception import BotoServerError
 from boto.ec2.cloudwatch import CloudWatchConnection
-from nio.common.signal.base import Signal
-from nio.util.support.block_test_case import NIOBlockTestCase
+from nio.block.terminals import DEFAULT_TERMINAL
+from nio.signal.base import Signal
+from nio.testing.block_test_case import NIOBlockTestCase
 from ..cloud_watch_block import CloudWatch
 
 
@@ -21,13 +22,6 @@ class SampleMetric():
 @patch('boto.ec2.cloudwatch.CloudWatchConnection.list_metrics')
 @patch(CloudWatch.__module__ + '.connect_to_region')
 class TestCloudWatch(NIOBlockTestCase):
-
-    def setUp(self):
-        super().setUp()
-        self._signals = []
-
-    def signals_notified(self, signals, output_id='default'):
-        self._signals.extend(signals)
 
     def test_connect(self, connect_func, list_func, stats_func):
         """ Make sure we connect with the right creds """
@@ -129,13 +123,13 @@ class TestCloudWatch(NIOBlockTestCase):
 
         # Make sure we grabbed the maximum as the value and not the others
         # We also want to make sure we only used the first value of the results
-        self.assertEqual(self._signals[0].value, 2)
+        self.assertEqual(self.last_notified[DEFAULT_TERMINAL][0].value, 2)
         self.assertEqual(
-            self._signals[0].dimensions['InstanceId'],
+            self.last_notified[DEFAULT_TERMINAL][0].dimensions['InstanceId'],
             ['instance-0'])
-        self.assertEqual(self._signals[1].value, 5)
+        self.assertEqual(self.last_notified[DEFAULT_TERMINAL][1].value, 5)
         self.assertEqual(
-            self._signals[1].dimensions['InstanceId'],
+            self.last_notified[DEFAULT_TERMINAL][1].dimensions['InstanceId'],
             ['instance-1'])
 
     def test_error_connecting(self, connect_func, list_func, stats_func):
