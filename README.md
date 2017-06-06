@@ -1,4 +1,5 @@
-# CloudWatch
+CloudWatch
+=================
 
 Retrieve data about your AWS resources using AWS Cloud Watch.
 
@@ -9,34 +10,36 @@ It will then, for each call to `process_signals`, make one request per metric to
 Once all metrics have been queried, a list of the valid output signals will be notified.
 
 
-## Properties
-
+Properties
+-----------------
  - **AWS Region**: The AWS region to connect to
  - **Access Key**: An AWS Access Token
  - **Access Secret**: The AWS Access Token's secret
- - **Metric to Monitor**: (string) Which metric you want to monitor - [Example EC2 Metrics](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ec2-metricscollected.html)
- - **Lookback Minutes**: (int) How many minutes to look back for data. Only the latest data point will be output
- - **Result Period Minutes**: (int) How many minutes the period of the data should represent. Tweak this to get the last hour's average CPU for example.
+ - **Metric to Monitor**: (type=string) Which metric you want to monitor - [Example EC2 Metrics](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ec2-metricscollected.html)
+ - **Lookback Minutes**: (type=int) How many minutes to look back for data. Only the latest data point will be output
+ - **Result Period Minutes**: (type=int) How many minutes the period of the data should represent. Tweak this to get the last hour's average CPU for example.
  - **Statistic**: How do you want to consolidate the data points
 
 
-## Dependencies
+Dependencies
+-----------------
 
  * boto - https://github.com/boto/boto
 
-## Commands
+Commands
+-----------------
 
 None
 
-TODO: Add command to re-sync the valid metrics
-
-## Input
+Input
+-----------------
 
 Any signal(s).
 
 Note: only one request set will be made per list of signals processed. A request set is comprised of one request per metric
 
-## Output
+Output
+-----------------
 
 One signal per metric. The signal will have the following format:
 
