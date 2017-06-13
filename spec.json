@@ -1,39 +1,40 @@
 {
-  "nio/CloudWatch": {
-    "Input": "Any signal(s).\nNote: only one request set will be made per list of signals processed. A request set is comprised of one request per metric",
-    "Dependencies": [
-      "* boto - https://github.com/boto/boto"
-    ],
-    "Version": "1.0.0",
-    "Output": "One signal per metric. The signal will have the following format:\n```python\n{\n'dimensions': '<The Dimension object containing the dimensions of the metric>',\n'value': '<The result of the calculation>'\n}\n```\nHere is an example of what a dimension of an EC2 CloudWatch Metric would look like. Note the instance ID is in a list of one element.\n```python\n{\n'InstanceId': ['i-XXXXXXX']\n}\n```",
-    "Description": "Retrieve data about your AWS resources using AWS Cloud Watch.\nThis block will start by querying AWS to determine which metrics can capture the metric specified with the block. It will cache those metric objects internally - so if you add an instance and want to track it, you will need to restart the service.\nIt will then, for each call to `process_signals`, make one request per metric to try to gather the data for the metric that the block has been configured with. If data exists, it will store the result of the metric using the method provided in **statistic** in a field called `value`.\nOnce all metrics have been queried, a list of the valid output signals will be notified.",
-    "Category": "WebService",
-    "Properties": {
-      "Metric to Monitor": {
-        "type": "string",
-        "description": "Which metric you want to monitor - [Example EC2 Metrics](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ec2-metricscollected.html)"
-      },
-      "Result Period Minutes": {
-        "type": "int",
-        "description": "How many minutes the period of the data should represent. Tweak this to get the last hour's average CPU for example."
-      },
-      "Access Secret": {
-        "description": "The AWS Access Token's secret"
-      },
-      "AWS Region": {
-        "description": "The AWS region to connect to"
-      },
-      "Lookback Minutes": {
-        "type": "int",
-        "description": "How many minutes to look back for data. Only the latest data point will be output"
-      },
-      "Access Key": {
-        "description": "An AWS Access Token"
-      },
-      "Statistic": {
-        "description": "How do you want to consolidate the data points"
-      }
-    },
-    "Commands": {}
-  }
+    "nio/CloudWatch": {
+        "Description": "Retrieve data about your AWS resources using AWS Cloud Watch.\nThis block will start by querying AWS to determine which metrics can capture the metric specified with the block. It will cache those metric objects internally - so if you add an instance and want to track it, you will need to restart the service.\nIt will then, for each call to `process_signals`, make one request per metric to try to gather the data for the metric that the block has been configured with. If data exists, it will store the result of the metric using the method provided in **statistic** in a field called `value`.\nOnce all metrics have been queried, a list of the valid output signals will be notified.",
+        "Version": "1.0.0",
+        "Category": "WebService",
+        "Properties": {
+            "Access Secret": {
+                "description": "The AWS Access Token's secret"
+            },
+            "Access Key": {
+                "description": "An AWS Access Token"
+            },
+            "Lookback Minutes": {
+                "description": "How many minutes to look back for data. Only the latest data point will be output",
+                "type": "int"
+            },
+            "AWS Region": {
+                "description": "The AWS region to connect to"
+            },
+            "Statistic": {
+                "description": "How do you want to consolidate the data points"
+            },
+            "Result Period Minutes": {
+                "description": "How many minutes the period of the data should represent. Tweak this to get the last hour's average CPU for example.",
+                "type": "int"
+            },
+            "Metric to Monitor": {
+                "description": "Which metric you want to monitor - [Example EC2 Metrics](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ec2-metricscollected.html)",
+                "type": "string"
+            }
+        },
+        "Commands": {},
+        "Output": {
+            "Description": "One signal per metric. The signal will have the following format:\n```python\n{\n'dimensions': '<The Dimension object containing the dimensions of the metric>',\n'value': '<The result of the calculation>'\n}\n```\nHere is an example of what a dimension of an EC2 CloudWatch Metric would look like. Note the instance ID is in a list of one element.\n```python\n{\n'InstanceId': ['i-XXXXXXX']\n}\n```"
+        },
+        "Input": {
+            "Description": "Any signal(s).\nNote: only one request set will be made per list of signals processed. A request set is comprised of one request per metric"
+        }
+    }
 }
