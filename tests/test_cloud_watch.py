@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 from boto.exception import BotoServerError
 from boto.ec2.cloudwatch import CloudWatchConnection
 from nio.block.terminals import DEFAULT_TERMINAL
@@ -58,27 +58,30 @@ class TestCloudWatch(NIOBlockTestCase):
 
     def test_get_metrics(self, connect_func, list_func, stats_func):
         """ Make sure we make a proper get_metric_statistics call """
-        blk = CloudWatch()
         connect_func.return_value = CloudWatchConnection('key', 'secret')
-        blk._metrics = [SampleMetric('instance-1')]
+        stats_func.return_value = [{'Maximum': 2}]
+        blk = CloudWatch()
         self.configure_block(blk, {
             'metric': 'MyMetricName',
             'lookback_mins': 60,  # 1 hour
             'result_period': 5,  # 5 mins
-            'statistic': 'Maximum'
+            'statistic': 'Maximum',
+            'log_level': "DEBUG"
         })
-
-        stats_func.return_value = [{'Maximum': 2}]
+        blk._metrics = [SampleMetric('instance-1')]
 
         # Send two signals into the block
         # This should only trigger one request per metric
         blk.process_signals([Signal(), Signal()])
-        stats_func.assertCalledOnceWith(
+
+        stats_func.assert_called_once_with(
             period=300,  # 5 mins...in seconds
             metric_name='MyMetricName',
             namespace='AWS/EC2',  # Make sure it uses the metric's namespace
             statistics='Maximum',
-            dimensions={'InstanceId': ['instance-1']})
+            dimensions={'InstanceId': ['instance-1']},
+            end_time=ANY,
+            start_time=ANY)
 
     def test_metric_results(self, connect_func, list_func, stats_func):
         """ Make sure we properly handle the results from get statistics """
