@@ -1,7 +1,7 @@
 {
   "nio/CloudWatch": {
-    "Reference": "github.com/nio-blocks/cloud_watch.git@v1.0.0",
-    "Language": "Python",
-    "Version": "1.0.0"
+    "language": "Python",
+    "version": "0.0.1",
+    "reference": "github.com/nio-blocks/cloud_watch.git@v0.0.1"
   }
 }
