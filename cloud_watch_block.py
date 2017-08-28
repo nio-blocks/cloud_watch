@@ -1,16 +1,15 @@
 import re
 import logging
-from enum import Enum
 import datetime
-from nio.util.discovery import discoverable
+from enum import Enum
+from threading import Lock
+from boto.ec2.cloudwatch import connect_to_region
+
 from nio.block.base import Block
 from nio.signal.base import Signal
 from nio.properties import ObjectProperty, PropertyHolder, \
     IntProperty, StringProperty, SelectProperty
 from nio.properties.version import VersionProperty
-from threading import Lock
-
-from boto.ec2.cloudwatch import connect_to_region
 
 
 class AWSRegion(Enum):
@@ -36,7 +35,6 @@ class AWSCreds(PropertyHolder):
         AWSRegion, default=AWSRegion.us_east_1, title="AWS Region")
 
 
-@discoverable
 class CloudWatch(Block):
 
     creds = ObjectProperty(AWSCreds, title="AWS Credentials")
@@ -137,7 +135,8 @@ class CloudWatch(Block):
         """ Gets the value(s) of the saved metric object """
         # Prepare some variables
         end_time = datetime.datetime.utcnow()
-        start_time = end_time - datetime.timedelta(minutes=self.lookback_mins())
+        start_time = end_time - datetime.timedelta(
+            minutes=self.lookback_mins())
 
         # Make the request
         results = self._conn.get_metric_statistics(
