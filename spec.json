@@ -1,10 +1,53 @@
 {
   "nio/CloudWatch": {
     "version": "0.0.1",
-    "description": "",
-    "inputs": {},
-    "outputs": {},
-    "properties": {},
+    "description": "Retrieve data about your AWS resources using AWS Cloud Watch.  This block will start by querying AWS to determine which metrics can capture the metric specified with the block. It will cache those metric objects internally - so if you add an instance and want to track it, you will need to restart the service.",
+    "properties": {
+      "creds": {
+        "title": "AWS Credentials",
+        "type": "ObjectType",
+        "description": "Credentials to log into and sync with AWS account",
+        "default": {
+          "access_secret": "[[AMAZON_SECRET_ACCESS_KEY]]",
+          "access_key": "[[AMAZON_ACCESS_KEY_ID]]",
+          "region": "us_east_1"
+        }
+      },
+      "lookback_mins": {
+        "title": "Lookback Minutes",
+        "type": "IntType",
+        "description": "How many minutes to look back for data. Only the latest data point will be output.",
+        "default": 5
+      },
+      "metric": {
+        "title": "Metric to Monitor",
+        "type": "StringType",
+        "description": "Which metric you want to monitor - [Example EC2 Metrics](http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/ec2-metricscollected.html).",
+        "default": "CPUCreditBalance"
+      },
+      "result_period": {
+        "title": "Result Period Minutes",
+        "type": "IntType",
+        "description": "How many minutes the period of the data should represent. Tweak this to get the last hour's average CPU for example.",
+        "default": 5
+      },
+      "statistic": {
+        "title": "Statistic Type",
+        "type": "SelectType",
+        "description": "How do you want to consolidate the data points.",
+        "default": 0
+      }
+    },
+    "inputs": {
+      "default": {
+        "description": "Any list of signals.  Only one request set will be made per list of signals processed.  A request set is comprised of one request per metric."
+      }
+    },
+    "outputs": {
+      "default": {
+        "description": "One signal per metric.  See example below for details."
+      }
+    },
     "commands": {}
   }
 }
