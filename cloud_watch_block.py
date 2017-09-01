@@ -44,7 +44,7 @@ class CloudWatch(Block):
     result_period = IntProperty(title="Result Period Minutes", default=5)
     statistic = SelectProperty(MetricStatistics, title="Statistic Type",
                                default=MetricStatistics.Average)
-    version = VersionProperty('0.0.1')
+    version = VersionProperty("1.0.0")
 
     def __init__(self):
         super().__init__()
