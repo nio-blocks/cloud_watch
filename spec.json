@@ -2,6 +2,9 @@
   "nio/CloudWatch": {
     "version": "1.0.0",
     "description": "Retrieve data about your AWS resources using AWS Cloud Watch.  This block will start by querying AWS to determine which metrics can capture the metric specified with the block. It will cache those metric objects internally - so if you add an instance and want to track it, you will need to restart the service.",
+    "categories": [
+      "Web Data"
+    ],
     "properties": {
       "creds": {
         "title": "AWS Credentials",
